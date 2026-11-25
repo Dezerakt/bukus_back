@@ -1,5 +1,9 @@
 package request
 
 type StoreBook struct {
-	Content []byte `json:"content"`
+	Name string `json:"name" validate:"required"`
+}
+
+type UpdateBook struct {
+	Name string `json:"name" validate:"required"`
 }

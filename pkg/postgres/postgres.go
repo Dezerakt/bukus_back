@@ -2,7 +2,6 @@
 package postgres
 
 import (
-	"bukus/config"
 	"context"
 	"fmt"
 	"log"
@@ -30,7 +29,7 @@ type Postgres struct {
 }
 
 // New -.
-func New(cfg *config.Config, opts ...Option) (*Postgres, error) {
+func New(url string, opts ...Option) (*Postgres, error) {
 	pg := &Postgres{
 		maxPoolSize:  _defaultMaxPoolSize,
 		connAttempts: _defaultConnAttempts,
@@ -44,9 +43,7 @@ func New(cfg *config.Config, opts ...Option) (*Postgres, error) {
 
 	pg.Builder = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 
-	connectionString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?pool_max_conns=10&pool_max_conn_lifetime=1h30m",
-		cfg.PG.User, cfg.PG.Password, cfg.PG.Host, cfg.PG.Port, cfg.PG.DB)
-	poolConfig, err := pgxpool.ParseConfig(connectionString)
+	poolConfig, err := pgxpool.ParseConfig(url)
 	if err != nil {
 		return nil, fmt.Errorf("postgres - NewPostgres - pgxpool.ParseConfig: %w", err)
 	}
@@ -57,6 +54,10 @@ func New(cfg *config.Config, opts ...Option) (*Postgres, error) {
 		pg.Pool, err = pgxpool.NewWithConfig(context.Background(), poolConfig)
 		if err == nil {
 			break
+		}
+
+		if err := pg.Pool.Ping(context.Background()); err != nil {
+			log.Fatalf("app - Run - pool.Ping: %v", err)
 		}
 
 		log.Printf("Postgres is trying to connect, attempts left: %d", pg.connAttempts)

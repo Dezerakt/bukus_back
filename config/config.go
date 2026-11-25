@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"github.com/caarlos0/env/v11"
 	"time"
+
+	"github.com/caarlos0/env/v11"
 )
 
 type (
@@ -36,18 +37,16 @@ type (
 
 	// PG -.
 	pg struct {
-		PoolMax  int    `env:"PG_POOL_MAX,required"`
-		Host     string `env:"PG_HOST,required"`
-		User     string `env:"PG_USER,required"`
-		DB       string `env:"PG_DB,required"`
-		Port     string `env:"PG_PORT,required"`
-		Password string `env:"PG_PASSWORD,required"`
+		PoolMax int    `env:"PG_POOL_MAX,required"`
+		URL     string `env:"PG_URL,required"`
 	}
 
 	// JWT -.
 	jwt struct {
-		Secret      string        `env:"JWT_SECRET,required"`
-		TokenExpiry time.Duration `env:"JWT_TOKEN_EXPIRY" envDefault:"24h"`
+		Secret             string        `env:"JWT_SECRET,required"`
+		AccessTokenExpiry  time.Duration `env:"JWT_ACCESS_TOKEN_EXPIRY" envDefault:"15m"`
+		RefreshSecret      string        `env:"JWT_REFRESH_SECRET,required"`
+		RefreshTokenExpiry time.Duration `env:"JWT_REFRESH_TOKEN_EXPIRY" envDefault:"7h"`
 	}
 
 	// Metrics -.
@@ -61,7 +60,14 @@ type (
 	}
 )
 
-func LoadConfig() (*Config, error) {
+var config *Config
+
+// NewConfig returns app config.
+func NewConfig() (*Config, error) {
+	if config != nil {
+		return config, nil
+	}
+
 	cfg := &Config{}
 	if err := env.Parse(cfg); err != nil {
 		return nil, fmt.Errorf("config error: %w", err)

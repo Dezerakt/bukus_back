@@ -10,6 +10,7 @@ import (
 // V1 -.
 type V1 struct {
 	bookUC usecase.Book
+	authUC usecase.Auth
 	l      logger.Interface
 	v      *validator.Validate
 }

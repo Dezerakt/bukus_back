@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bukus/internal/controller/restapi/middleware"
 	"bukus/internal/usecase"
 	"bukus/pkg/jwt"
 	"bukus/pkg/logger"
@@ -10,32 +11,29 @@ import (
 )
 
 // NewRoutes -.
-func NewRoutes(apiV1Group fiber.Router, uc *usecase.Container, jwtManager *jwt.Manager, l logger.Interface) {
+func NewRoutes(apiV1Group fiber.Router, b usecase.Book, a usecase.Auth, jwtManager *jwt.Manager, l logger.Interface) {
 	r := &V1{
-		bookUC: uc.Book,
+		bookUC: b,
+		authUC: a,
 		l:      l,
 		v:      validator.New(validator.WithRequiredStructEnabled()),
 	}
 
-	// Public routes
-	//authGroup := apiV1Group.Group("/auth")
-	//{
-	//	authGroup.Post("/register", r.register)
-	//	authGroup.Post("/login", r.login)
-	//}
-
-	apiPrefix := apiV1Group.Group("/api")
-	bookGroup := apiPrefix.Group("/book")
+	// Auth routes (public)
+	authGroup := apiV1Group.Group("/auth")
 	{
-		bookGroup.Post("/store", r.store)
+		authGroup.Post("/register", r.register)
+		authGroup.Post("/login", r.login)
+		authGroup.Post("/refresh", r.refresh)
 	}
 
-	// Protected routes
-	//protected := apiV1Group.Group("", middleware.Auth(jwtManager))
-	//
-	//translationGroup := protected.Group("/book")
-	//{
-	//	translationGroup.Get("/history", r.history)
-	//	translationGroup.Post("/do-translate", r.doTranslate)
-	//}
+	// Book routes (protected)
+	bookGroup := apiV1Group.Group("/books", middleware.JWTMiddleware(jwtManager, l))
+	{
+		bookGroup.Get("/", r.list)
+		bookGroup.Post("/", r.store)
+		bookGroup.Get("/:id", r.getByID)
+		bookGroup.Put("/:id", r.update)
+		bookGroup.Delete("/:id", r.delete)
+	}
 }
